@@ -11,7 +11,7 @@ const sdk = vi.hoisted(() => ({
   calls: [] as { method: string; insideGuard: boolean; params: any }[],
   generateImpl: (async () => ({ text: "" })) as (p: any) => Promise<any>,
   getImpl: (async () => ({ name: "models/x", displayName: "X" })) as (p: any) => Promise<any>,
-  isInside: () => false,
+  isInside: (() => false) as () => boolean,
 }));
 
 vi.mock("@google/genai", () => ({
