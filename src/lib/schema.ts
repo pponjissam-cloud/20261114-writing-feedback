@@ -144,3 +144,29 @@ export function buildResponseSchema(): GeminiSchema {
   const json = zodToJsonSchema(FeedbackSchema, { target: "openApi3", $refStrategy: "none" }) as JsonSchema;
   return jsonSchemaToGemini(json);
 }
+
+/* ---------- 손글씨 사진 → 텍스트 ---------- */
+
+export const UNREADABLE_MARK = "[?]";
+
+export const TranscriptionSchema = z.object({
+  isEssay: z.boolean().describe("false if the images do not contain a handwritten/printed English essay"),
+  topic: z.string().describe("Essay prompt or title if written on the page, otherwise empty string"),
+  text: z.string().describe("Verbatim transcription of the essay body, preserving the student's mistakes and paragraph breaks"),
+  unreadableCount: z.number().int().min(0),
+});
+export type Transcription = z.infer<typeof TranscriptionSchema>;
+
+export function parseTranscription(raw: string): { ok: true; data: Transcription } | { ok: false; error: string } {
+  try {
+    const r = TranscriptionSchema.safeParse(JSON.parse(stripCodeFence(raw)));
+    return r.success ? { ok: true, data: r.data } : { ok: false, error: "글자 읽기 결과 형식이 올바르지 않아요." };
+  } catch {
+    return { ok: false, error: "글자 읽기 결과를 해석하지 못했어요." };
+  }
+}
+
+export function buildTranscriptionSchema(): GeminiSchema {
+  const json = zodToJsonSchema(TranscriptionSchema, { target: "openApi3", $refStrategy: "none" }) as JsonSchema;
+  return jsonSchemaToGemini(json);
+}

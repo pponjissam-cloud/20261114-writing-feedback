@@ -86,6 +86,8 @@ export const StoredReportSchema = z.object({
   parentId: z.string().optional(),
   version: z.number().int().min(1),
   mock: z.boolean().optional(),
+  /** photo = 손글씨 사진에서 옮겨 적은 글 */
+  inputMethod: z.enum(["typed", "photo"]).optional(),
 });
 export type StoredReport = z.infer<typeof StoredReportSchema>;
 
@@ -96,6 +98,7 @@ export const DraftSchema = z.object({
   topic: z.string(),
   essay: z.string(),
   rewriteOf: z.string().optional(),
+  inputMethod: z.enum(["typed", "photo"]).optional(),
   updatedAt: z.number(),
 });
 export type Draft = z.infer<typeof DraftSchema>;

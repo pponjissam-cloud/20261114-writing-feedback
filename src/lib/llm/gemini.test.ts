@@ -225,3 +225,63 @@ describe("mockFeedbackFor", () => {
     expect(fb.redPen[0]!.original).toBe("Schools should start later.");
   });
 });
+
+describe("transcribe (손글씨 사진)", () => {
+  const images = [
+    { mimeType: "image/jpeg", data: "AAAA" },
+    { mimeType: "image/jpeg", data: "BBBB" },
+  ];
+  const transcriptJson = (over: Record<string, unknown> = {}) =>
+    Promise.resolve({ text: JSON.stringify({ isEssay: true, topic: "Homework", text: "Many people thinks homework is bad.", unreadableCount: 0, ...over }) });
+
+  it("여러 장을 한 번의 호출로 순서대로 보내고, 가드를 거쳐 1회 차감한다", async () => {
+    sdk.generateImpl = () => transcriptJson();
+    const t = await service().transcribe({ apiKey: KEY, modelId: LITE, images });
+    expect(t.text).toBe("Many people thinks homework is bad.");
+    expectAllCallsGuarded(1);
+    const { contents, config } = sdk.calls[0]!.params;
+    expect(contents[0].inlineData.data).toBe("AAAA");
+    expect(contents[1].inlineData.data).toBe("BBBB");
+    expect(config.systemInstruction).toMatch(/NEVER correct/);
+    expect(config.responseMimeType).toBe("application/json");
+    for (const k of ["temperature", "topP", "topK", "tools"]) expect(config).not.toHaveProperty(k);
+    expect(guard.status(keyHash, LITE).used).toBe(1);
+  });
+
+  it("에세이가 없는 사진이면 안내 오류를 낸다 (자동 재시도 없음)", async () => {
+    sdk.generateImpl = () => transcriptJson({ isEssay: false, text: "" });
+    const err = await service().transcribe({ apiKey: KEY, modelId: LITE, images }).catch((e) => e);
+    expect(err.message).toMatch(/에세이를 찾지 못했어요/);
+    expect(sdk.calls).toHaveLength(1);
+  });
+
+  it("사진 수 제한을 호출 전에 검사한다", async () => {
+    const five = Array.from({ length: 5 }, () => images[0]!);
+    await expect(service().transcribe({ apiKey: KEY, modelId: LITE, images: five })).rejects.toThrow(/최대 4장/);
+    await expect(service().transcribe({ apiKey: KEY, modelId: LITE, images: [] })).rejects.toThrow();
+    expect(sdk.calls).toHaveLength(0);
+    expect(guard.status(keyHash, LITE).used).toBe(0);
+  });
+
+  it("한도가 없으면 사진 읽기도 차단된다", async () => {
+    guard.markExhausted(keyHash, LITE);
+    const err = await service().transcribe({ apiKey: KEY, modelId: LITE, images }).catch((e) => e);
+    expect(err.kind).toBe("quota");
+    expect(sdk.calls).toHaveLength(0);
+  });
+
+  it("mock 모드는 사용량을 차감하지 않는다", async () => {
+    const t = await service(true).transcribe({ apiKey: KEY, modelId: LITE, images });
+    expect(t.isEssay).toBe(true);
+    expect(guard.status(keyHash, LITE).used).toBe(0);
+  });
+
+  it("손글씨 제출이면 채점 프롬프트에 [?] 처리 안내를 넣는다", async () => {
+    sdk.generateImpl = valid;
+    await service().generateFeedback({ ...req, handwritten: true });
+    expect(sdk.calls[0]!.params.contents).toMatch(/transcribed from a photo/);
+    now += 5000;
+    await service().generateFeedback(req);
+    expect(sdk.calls[1]!.params.contents).not.toMatch(/transcribed from a photo/);
+  });
+});

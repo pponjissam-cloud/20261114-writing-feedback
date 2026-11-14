@@ -56,6 +56,7 @@ export function ReportPage() {
           <span>{date}</span>
           <Badge variant="outline">{model?.shortLabel ?? report.modelId}</Badge>
           {report.version > 1 && <Badge variant="secondary">Rewrite {report.version}번째 글</Badge>}
+          {report.inputMethod === "photo" && <Badge variant="secondary">손글씨 사진 제출</Badge>}
           {report.mock && <Badge variant="destructive">모의 응답</Badge>}
           {parent && (
             <Link className="no-print underline" to={`/report/${parent.id}`}>

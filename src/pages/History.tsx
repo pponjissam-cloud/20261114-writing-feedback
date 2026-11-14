@@ -121,6 +121,7 @@ export function HistoryPage() {
                       <span className="w-16 text-muted-foreground">{r.version === 1 ? "처음 글" : `Rewrite ${r.version - 1}`}</span>
                       <strong className="w-12 tabular-nums">{r.total}점</strong>
                       <Badge variant="outline">{getModel(r.modelId)?.shortLabel ?? r.modelId}</Badge>
+                      {r.inputMethod === "photo" && <Badge variant="secondary">사진</Badge>}
                       {r.mock && <Badge variant="secondary">모의</Badge>}
                       <span className="text-xs text-muted-foreground">{fmt(r.createdAt)}</span>
                     </Link>

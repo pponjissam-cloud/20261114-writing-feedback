@@ -25,6 +25,7 @@ export function buildReport(input: {
   parent?: StoredReport | null;
   siblings?: StoredReport[];
   mock?: boolean;
+  inputMethod?: "typed" | "photo";
   now?: number;
 }): StoredReport {
   const rubric = snapshotRubric();
@@ -46,6 +47,7 @@ export function buildReport(input: {
     parentId: parent?.id,
     version,
     mock: input.mock || undefined,
+    inputMethod: input.inputMethod,
   };
 }
 

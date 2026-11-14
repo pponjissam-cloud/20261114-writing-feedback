@@ -3,8 +3,8 @@ import { DEFAULT_MODEL_ID, MAX_OUTPUT_TOKENS, REQUEST_TIMEOUT_MS, type ModelId }
 import { RUBRIC } from "@/config/rubric";
 import { hashKey, redactSecrets } from "@/lib/apiKey";
 import { quota as defaultQuota, QuotaError, type QuotaGuard } from "@/lib/quota";
-import { buildResponseSchema, parseFeedback, type Feedback } from "@/lib/schema";
-import { buildSystemInstruction, buildUserPrompt, type PreviousAttempt } from "@/lib/llm/prompts";
+import { buildResponseSchema, buildTranscriptionSchema, parseFeedback, parseTranscription, type Feedback, type Transcription } from "@/lib/schema";
+import { buildSystemInstruction, buildUserPrompt, TRANSCRIPTION_INSTRUCTION, type PreviousAttempt } from "@/lib/llm/prompts";
 import { SAMPLE_FEEDBACK } from "@/lib/llm/sampleFeedback";
 
 /** SDK 중 이 앱이 쓰는 부분만 (테스트에서 mock 하기 쉽도록) */
@@ -13,10 +13,18 @@ export interface GenAIClientLike {
     get(params: { model: string; config?: { abortSignal?: AbortSignal } }): Promise<{ name?: string; displayName?: string }>;
     generateContent(params: {
       model: string;
-      contents: string;
+      contents: string | ContentPart[];
       config: Record<string, unknown>;
     }): Promise<{ text?: string; candidates?: { finishReason?: string }[] }>;
   };
+}
+
+export type ContentPart = { text: string } | { inlineData: { mimeType: string; data: string } };
+
+export interface ImageInput {
+  mimeType: string;
+  /** base64 (data: 접두사 없이) */
+  data: string;
 }
 
 export type GeminiErrorKind = "quota" | "auth" | "model" | "timeout" | "network" | "invalid_response" | "blocked" | "unknown";
@@ -48,8 +56,18 @@ export interface FeedbackRequest {
   topic: string;
   essay: string;
   previous?: PreviousAttempt;
+  /** 손글씨 사진에서 옮겨 적은 글인지 (프롬프트에 [?] 처리 안내 추가) */
+  handwritten?: boolean;
   onStage?: (stage: Stage) => void;
 }
+
+export interface TranscribeRequest {
+  apiKey: string;
+  modelId: ModelId;
+  images: ImageInput[];
+}
+
+export const MAX_IMAGES = 4;
 
 export interface FeedbackResult {
   feedback: Feedback;
@@ -142,7 +160,7 @@ export function createGeminiService(deps: GeminiDeps) {
   }
 
   async function attempt(req: FeedbackRequest): Promise<{ ok: true; feedback: Feedback } | { ok: false; reason: string }> {
-    const contents = buildUserPrompt({ topic: req.topic, essay: req.essay, previous: req.previous });
+    const contents = buildUserPrompt({ topic: req.topic, essay: req.essay, previous: req.previous, handwritten: req.handwritten });
     const response = await guarded(req.apiKey, req.modelId, (client, signal) =>
       client.models.generateContent({ model: req.modelId, contents, config: buildGenerateConfig(signal) }),
     );
@@ -190,7 +208,52 @@ export function createGeminiService(deps: GeminiDeps) {
     }
   }
 
-  return { testConnection, generateFeedback };
+  /**
+   * 손글씨 사진 → 텍스트 (1회 호출, 여러 장은 한 번에).
+   * 채점과 분리한 이유: 학생이 AI가 잘못 읽은 글자를 먼저 고쳐야
+   * "학생의 실수"와 "AI의 판독 실수"가 섞이지 않은 채로 첨삭받을 수 있다.
+   */
+  async function transcribe(req: TranscribeRequest): Promise<Transcription> {
+    if (req.images.length === 0) throw new GeminiError("invalid_response", "사진을 한 장 이상 올려 주세요.");
+    if (req.images.length > MAX_IMAGES) throw new GeminiError("invalid_response", `사진은 최대 ${MAX_IMAGES}장까지 올릴 수 있어요.`);
+    if (deps.mock) {
+      await deps.sleep(800);
+      return MOCK_TRANSCRIPTION;
+    }
+    try {
+      const contents: ContentPart[] = [
+        ...req.images.map((img) => ({ inlineData: { mimeType: img.mimeType, data: img.data } })),
+        { text: `Transcribe the essay in these ${req.images.length} image(s), in order.` },
+      ];
+      const response = await guarded(req.apiKey, req.modelId, (client, signal) =>
+        client.models.generateContent({
+          model: req.modelId,
+          contents,
+          config: {
+            systemInstruction: TRANSCRIPTION_INSTRUCTION,
+            responseMimeType: "application/json",
+            responseSchema: buildTranscriptionSchema(),
+            maxOutputTokens: MAX_OUTPUT_TOKENS,
+            abortSignal: signal,
+          },
+        }),
+      );
+      const finish = response.candidates?.[0]?.finishReason;
+      if (finish === "SAFETY" || finish === "PROHIBITED_CONTENT" || finish === "BLOCKED") {
+        throw new GeminiError("blocked", "사진 내용 때문에 AI가 글자를 읽지 못했어요. 다른 사진으로 시도해 주세요.");
+      }
+      const parsed = parseTranscription(response.text ?? "");
+      if (!parsed.ok) throw new GeminiError("invalid_response", `${parsed.error} "다시 시도"를 눌러 주세요.`);
+      if (!parsed.data.isEssay || !parsed.data.text.trim()) {
+        throw new GeminiError("invalid_response", "사진에서 영어 에세이를 찾지 못했어요. 글씨가 잘 보이게 밝은 곳에서 다시 찍어 주세요.");
+      }
+      return parsed.data;
+    } catch (err) {
+      throw toGeminiError(err, req.apiKey);
+    }
+  }
+
+  return { testConnection, generateFeedback, transcribe };
 }
 
 /** VITE_MOCK 모드: 고정 샘플 + 학생 글 첫 문장을 첨삭 예시로 넣어 하이라이트를 확인할 수 있게 한다 */
@@ -207,6 +270,13 @@ export function mockFeedbackFor(essay: string): Feedback {
   }
   return fb;
 }
+
+export const MOCK_TRANSCRIPTION: Transcription = {
+  isEssay: true,
+  topic: "Should students have homework every day?",
+  text: "Many people thinks homework is bad. I think homework is bad too. First, students are tired after school because they study alot in class. Second, homework takes time from family and hobbys.\n\nSome teachers say homework helps students review. But students can review in class.\n\nIn conclusion, I think homework should be less. Schools should give homework only two days a week so students can rest and [?] their life.",
+  unreadableCount: 1,
+};
 
 const isMock = import.meta.env.VITE_MOCK === "true";
 
