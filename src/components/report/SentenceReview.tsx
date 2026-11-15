@@ -7,9 +7,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { SectionTitle } from "./SectionTitle";
 import { cn } from "@/lib/utils";
 
-// 색 규칙: 학생 문장 = 검정, 최소 첨삭 = 회색 바탕글 + 고친 부분만 검정, 추천 = 굵게, 넣을/뺄 문장 = 파랑
+// 색 규칙: 학생 문장 = 검정, 최소 첨삭 = 회색 바탕글 + 고친 부분은 빨간펜, 추천 = 굵게, 넣을/뺄 문장 = 파랑
 const BLUE = "text-blue-600 dark:text-blue-400 print:text-[#1d4ed8]";
 const BLACK = "text-neutral-950 dark:text-neutral-50 print:text-black";
+const RED = "text-redpen print:text-[#d40000]";
 const GREY = "text-neutral-400 dark:text-neutral-500 print:text-[#9ca3af]";
 
 function MinimalDiff({ parts }: { parts: DiffPart[] }) {
@@ -19,9 +20,9 @@ function MinimalDiff({ parts }: { parts: DiffPart[] }) {
         p.type === "same" ? (
           <span key={i} className={GREY}>{p.text}</span>
         ) : p.type === "add" ? (
-          <span key={i} className={`${BLACK} font-semibold underline decoration-1 underline-offset-4`}>{p.text}</span>
+          <span key={i} className={`${RED} font-semibold`}>{p.text}</span>
         ) : (
-          <del key={i} className={`${BLACK} mr-1 decoration-1`} aria-label={`삭제: ${p.text}`}>{p.text}</del>
+          <del key={i} className={`${RED} mr-1 decoration-redpen decoration-[1.5px]`} aria-label={`삭제: ${p.text}`}>{p.text}</del>
         ),
       )}
     </>
@@ -115,7 +116,7 @@ export function SentenceReviewView({ essay, review, no }: { essay: string; revie
           <ul className="mb-2 flex flex-wrap gap-x-4 gap-y-0.5 rounded-md bg-muted px-3 py-1.5 text-[0.7rem]" aria-label="표시 방법">
             <li><span className={BLACK}>학생 문장</span> = 내가 쓴 그대로</li>
             <li>
-              최소 첨삭 = <span className={GREY}>그대로 둔 부분</span> + <span className={`${BLACK} font-semibold underline underline-offset-4`}>고친 부분</span> <del className={BLACK}>지운 부분</del>
+              최소 첨삭 = <span className={GREY}>그대로 둔 부분</span> + <span className={`${RED} font-semibold`}>고친 부분</span> <del className={`${RED} decoration-redpen`}>지운 부분</del>
             </li>
             <li><strong>추천 문장</strong> = 더 좋은 표현</li>
             <li className={BLUE}>파란색 = 넣거나 뺄 문장</li>
