@@ -29,6 +29,8 @@ const STAGE_MESSAGES: Record<Stage, string> = {
 // 단일 호출이라 실제 진행률을 알 수 없으므로, 기다리는 동안 메시지만 순서대로 바꿔 보여 준다
 const WAITING_SEQUENCE: Stage[] = ["reading", "scoring", "redpen"];
 const MODEL_PREF_KEY = `${STORAGE_PREFIX}model`;
+// 이름은 리포트 표시용으로만 이 브라우저에 저장하며 Gemini 로 보내지 않는다
+const NAME_KEY = `${STORAGE_PREFIX}studentName`;
 
 function initialModel(): ModelId {
   const saved = localRepo.get(MODEL_PREF_KEY);
@@ -45,6 +47,7 @@ export function WritePage() {
   const statuses = useQuota(keyHash);
 
   const [topic, setTopic] = useState("");
+  const [studentName, setStudentNameState] = useState(() => localRepo.get(NAME_KEY) ?? "");
   const [essay, setEssay] = useState("");
   const [modelId, setModelIdState] = useState<ModelId>(initialModel);
   const [savedAt, setSavedAt] = useState<number | null>(null);
@@ -60,6 +63,11 @@ export function WritePage() {
   const [lastAction, setLastAction] = useState<"read" | "submit">("submit");
   const loaded = useRef(false);
 
+  const setStudentName = (v: string) => {
+    setStudentNameState(v);
+    try { localRepo.set(NAME_KEY, v); } catch { /* ignore */ }
+  };
+
   const setModelId = (id: ModelId) => {
     setModelIdState(id);
     try { localRepo.set(MODEL_PREF_KEY, id); } catch { /* ignore */ }
@@ -73,6 +81,7 @@ export function WritePage() {
       setTopic(useDraft ? draft.topic : parent.topic);
       setEssay(useDraft ? draft.essay : parent.essay);
       setInputMethod("typed");
+      if (parent.studentName) setStudentNameState(parent.studentName);
     } else if (draft && !draft.rewriteOf) {
       setTopic(draft.topic);
       setEssay(draft.essay);
@@ -166,7 +175,7 @@ export function WritePage() {
         handwritten: inputMethod === "photo",
         onStage: (s) => s === "retrying" && setStage(s),
       });
-      const report = buildReport({ modelId, topic, essay, feedback: result.feedback, parent, siblings: reportStore.list(), mock: result.mock, inputMethod });
+      const report = buildReport({ modelId, topic, essay, feedback: result.feedback, parent, siblings: reportStore.list(), mock: result.mock, inputMethod, studentName });
       reportStore.save(report);
       reportStore.clearDraft();
       navigate(`/report/${report.id}`);
@@ -213,9 +222,15 @@ export function WritePage() {
           <CardTitle>{parent ? "글 고쳐 쓰기" : "영어 논설문 쓰기"}</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="topic">주제 (Prompt)</Label>
-            <Input id="topic" placeholder="예: Should students have homework every day?" value={topic} onChange={(e) => setTopic(e.target.value)} />
+          <div className="grid gap-3 sm:grid-cols-[10rem_minmax(0,1fr)]">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="student-name">이름</Label>
+              <Input id="student-name" placeholder="예: 김민지" autoComplete="name" maxLength={30} value={studentName} onChange={(e) => setStudentName(e.target.value)} />
+            </div>
+            <div className="flex min-w-0 flex-col gap-1.5">
+              <Label htmlFor="topic">주제 (Prompt)</Label>
+              <Input id="topic" placeholder="예: Should students have homework every day?" value={topic} onChange={(e) => setTopic(e.target.value)} />
+            </div>
           </div>
           <div className="flex rounded-lg bg-muted p-1" role="tablist" aria-label="제출 방법">
             {([

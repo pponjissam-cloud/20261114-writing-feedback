@@ -40,6 +40,24 @@ export const FeedbackSchema = z.object({
       explanation: z.string().describe("Easy Korean explanation"),
     }),
   ),
+  sentenceReview: z.object({
+    items: z.array(
+      z.object({
+        no: z.number().int().min(1).describe("Sentence number [n] from the numbered list"),
+        action: z.enum(["keep", "revise", "delete"]),
+        minimal: z.string().describe("Minimal correction: fix only errors, keep the student's words. Same as original if keep; empty if delete"),
+        recommended: z.string().describe("A better, more natural version at the student's level; empty if delete"),
+        note: z.string().describe("Short easy Korean reason (empty string if keep)"),
+      }),
+    ),
+    insertions: z.array(
+      z.object({
+        afterNo: z.number().int().min(0).describe("Insert after this sentence number (0 = at the very beginning)"),
+        sentence: z.string().describe("English sentence to add"),
+        reason: z.string().describe("Easy Korean reason"),
+      }),
+    ),
+  }),
   rewriteMission: z.object({
     tasks: z
       .array(
@@ -58,6 +76,11 @@ export const FeedbackSchema = z.object({
 export type Feedback = z.infer<typeof FeedbackSchema>;
 export type CorrectionType = Feedback["corrections"][number]["type"];
 export type RedPenItem = Feedback["redPen"][number];
+export type SentenceReview = Feedback["sentenceReview"];
+
+/** 이 기능 이전에 저장된 리포트에는 sentenceReview 가 없다 */
+export const StoredFeedbackSchema = FeedbackSchema.partial({ sentenceReview: true });
+export type StoredFeedback = z.infer<typeof StoredFeedbackSchema>;
 
 /** JSON 스키마로 표현하기 어려운 제약(항목 중복 금지)까지 포함한 검증용 스키마 */
 export const StrictFeedbackSchema = FeedbackSchema.superRefine((fb, ctx) => {

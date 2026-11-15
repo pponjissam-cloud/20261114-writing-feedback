@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { FeedbackSchema } from "@/lib/schema";
+import { StoredFeedbackSchema } from "@/lib/schema";
 import { RubricKeySchema } from "@/lib/schema";
 
 /** 저장소 추상화 — 테스트에서는 메모리 구현, 앱에서는 localStorage/sessionStorage */
@@ -78,7 +78,7 @@ export const StoredReportSchema = z.object({
   modelId: z.string(),
   topic: z.string(),
   essay: z.string(),
-  feedback: FeedbackSchema,
+  feedback: StoredFeedbackSchema,
   rubric: z.array(z.object({ key: RubricKeySchema, label: z.string(), max: z.number() })),
   total: z.number(),
   /** 같은 원글에서 나온 Rewrite 버전들을 묶는 id (첫 글의 id) */
@@ -88,6 +88,7 @@ export const StoredReportSchema = z.object({
   mock: z.boolean().optional(),
   /** photo = 손글씨 사진에서 옮겨 적은 글 */
   inputMethod: z.enum(["typed", "photo"]).optional(),
+  studentName: z.string().optional(),
 });
 export type StoredReport = z.infer<typeof StoredReportSchema>;
 

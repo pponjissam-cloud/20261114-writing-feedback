@@ -6,6 +6,7 @@ import { quota as defaultQuota, QuotaError, type QuotaGuard } from "@/lib/quota"
 import { buildResponseSchema, buildTranscriptionSchema, parseFeedback, parseTranscription, type Feedback, type Transcription } from "@/lib/schema";
 import { buildSystemInstruction, buildUserPrompt, TRANSCRIPTION_INSTRUCTION, type PreviousAttempt } from "@/lib/llm/prompts";
 import { SAMPLE_FEEDBACK } from "@/lib/llm/sampleFeedback";
+import { splitSentences } from "@/lib/sentences";
 
 /** SDK 중 이 앱이 쓰는 부분만 (테스트에서 mock 하기 쉽도록) */
 export interface GenAIClientLike {
@@ -268,6 +269,19 @@ export function mockFeedbackFor(essay: string): Feedback {
       reason: "(모의 응답) 첫 문장에 In my opinion을 붙이면 내 주장이라는 것이 더 분명해져요.",
     });
   }
+  // 문장별 첨삭 데모: 첫 문장은 고치고, 셋째 문장은 삭제, 둘째 문장 뒤에 예시 삽입
+  const sentences = splitSentences(essay);
+  fb.sentenceReview = {
+    items: sentences.map((s) => {
+      if (s.no === 1) {
+        const minimal = s.text.replace(/\b(people|students|they|we) (\w+)s\b/i, "$1 $2");
+        return { no: 1, action: "revise" as const, minimal: minimal === s.text ? s.text.replace(/\.$/, "!") : minimal, recommended: "In my opinion, many people believe that homework does more harm than good.", note: "(모의 응답) 주어가 여러 명이면 동사에 -s를 붙이지 않아요." };
+      }
+      if (s.no === 3 && sentences.length > 4) return { no: 3, action: "delete" as const, minimal: "", recommended: "", note: "(모의 응답) 앞 문장과 같은 내용이 반복돼요." };
+      return { no: s.no, action: "keep" as const, minimal: s.text, recommended: s.text, note: "" };
+    }),
+    insertions: sentences.length > 1 ? [{ afterNo: 2, sentence: "For example, many students sleep less than six hours because of homework.", reason: "(모의 응답) 구체적인 예시를 넣으면 근거가 더 튼튼해져요." }] : [],
+  };
   return fb;
 }
 

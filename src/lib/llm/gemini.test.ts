@@ -88,7 +88,7 @@ describe("generateFeedback", () => {
     expect(model).toBe(LITE);
     expect(config.responseMimeType).toBe("application/json");
     expect(config.responseSchema.type).toBe("OBJECT");
-    expect(config.maxOutputTokens).toBe(8192);
+    expect(config.maxOutputTokens).toBe(12288);
     for (const k of ["temperature", "topP", "topK", "tools", "toolConfig", "cachedContent"]) expect(config).not.toHaveProperty(k);
   });
 

@@ -27,8 +27,12 @@ export type ModelId = ModelConfig["id"];
 
 export const DEFAULT_MODEL_ID: ModelId = MODELS[0].id;
 
-/** 한 번의 응답에서 허용할 최대 출력 토큰 (과도한 출력 방지) */
-export const MAX_OUTPUT_TOKENS = 8192;
+/**
+ * 한 번의 응답에서 허용할 최대 출력 토큰 (과도한 출력 방지).
+ * 문장별 첨삭(모든 문장 × 최소/추천 문장)이 추가되어 8192 → 12288 로 올림.
+ * 응답이 잘려 "응답이 너무 길어 중간에 잘렸어요"가 자주 나오면 더 올리세요.
+ */
+export const MAX_OUTPUT_TOKENS = 12288;
 
 /** 응답 대기 최대 시간 */
 export const REQUEST_TIMEOUT_MS = 60_000;

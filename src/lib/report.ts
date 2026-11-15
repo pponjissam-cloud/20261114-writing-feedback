@@ -26,6 +26,7 @@ export function buildReport(input: {
   siblings?: StoredReport[];
   mock?: boolean;
   inputMethod?: "typed" | "photo";
+  studentName?: string;
   now?: number;
 }): StoredReport {
   const rubric = snapshotRubric();
@@ -48,6 +49,7 @@ export function buildReport(input: {
     version,
     mock: input.mock || undefined,
     inputMethod: input.inputMethod,
+    studentName: input.studentName?.trim() || undefined,
   };
 }
 

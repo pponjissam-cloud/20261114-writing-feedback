@@ -11,14 +11,14 @@ import { SectionTitle } from "./SectionTitle";
 type Filter = "all" | CorrectionType;
 const TYPES = Object.keys(CORRECTION_TYPE_LABEL) as CorrectionType[];
 
-export function CorrectionTable({ corrections, unmatchedRedPen }: { corrections: Feedback["corrections"]; unmatchedRedPen: RedPenItem[] }) {
+export function CorrectionTable({ corrections, unmatchedRedPen, no = "④" }: { corrections: Feedback["corrections"]; unmatchedRedPen: RedPenItem[]; no?: string }) {
   const [filter, setFilter] = useState<Filter>("all");
   const rows = corrections.map((c, i) => ({ ...c, no: i + 1 })).filter((c) => filter === "all" || c.type === filter);
   const count = (t: Filter) => (t === "all" ? corrections.length : corrections.filter((c) => c.type === t).length);
 
   return (
     <section>
-      <SectionTitle no="④" title="상세 정정 목록" />
+      <SectionTitle no={no} title="상세 정정 목록" />
       <Card>
         <CardContent className="p-5">
           <div className="no-print mb-3 flex flex-wrap gap-1.5" role="group" aria-label="유형 필터">

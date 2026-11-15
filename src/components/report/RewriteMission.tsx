@@ -13,7 +13,9 @@ export function RewriteMission({
   summary,
   onRewrite,
   rewriteCostLabel,
+  no = "⑤",
 }: {
+  no?: string;
   reportId: string;
   mission: Feedback["rewriteMission"];
   summary: ScoreSummary;
@@ -34,7 +36,7 @@ export function RewriteMission({
 
   return (
     <section>
-      <SectionTitle no="⑤" title="Rewrite 미션" sub={`체크 ${done}/${total}`} />
+      <SectionTitle no={no} title="Rewrite 미션" sub={`체크 ${done}/${total}`} />
       <div className="flex flex-col gap-4">
         {mission.tasks.map((task, ti) => {
           const item = summary.items.find((i) => i.key === task.targetKey);

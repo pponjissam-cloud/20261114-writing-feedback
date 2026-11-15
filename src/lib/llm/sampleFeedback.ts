@@ -35,6 +35,13 @@ export const SAMPLE_FEEDBACK: Feedback = {
     { original: "alot", corrected: "a lot", type: "spelling", explanation: "a lot은 두 단어로 띄어 써요." },
     { original: "I think so.", corrected: "That is why I believe this.", type: "expression", explanation: "결론에서는 이유와 연결해 다시 주장을 말하면 좋아요." },
   ],
+  sentenceReview: {
+    items: [
+      { no: 1, action: "revise", minimal: "Many people think homework is bad.", recommended: "Many people believe that homework does more harm than good.", note: "people은 여러 명이라 think를 써요." },
+      { no: 2, action: "keep", minimal: "I think homework is bad too.", recommended: "I also believe that students should get less homework.", note: "" },
+    ],
+    insertions: [{ afterNo: 2, sentence: "For example, many students sleep less than six hours because of homework.", reason: "주장을 뒷받침하는 구체적인 예시가 있으면 더 설득력이 생겨요." }],
+  },
   rewriteMission: {
     tasks: [
       {

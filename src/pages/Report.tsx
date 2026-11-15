@@ -10,6 +10,8 @@ import { OverallFeedback } from "@/components/report/OverallFeedback";
 import { RedPenView, useRedPenLayout } from "@/components/report/RedPenView";
 import { CorrectionTable } from "@/components/report/CorrectionTable";
 import { RewriteMission } from "@/components/report/RewriteMission";
+import { SentenceReviewView } from "@/components/report/SentenceReview";
+import { FeedbackSheetHeader } from "@/components/report/FeedbackSheetHeader";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -35,6 +37,7 @@ export function ReportPage() {
   }
 
   const model = getModel(report.modelId);
+  const hasReview = !!report.feedback.sentenceReview;
   const date = new Date(report.createdAt).toLocaleString("ko-KR", { dateStyle: "medium", timeStyle: "short" });
 
   return (
@@ -50,8 +53,7 @@ export function ReportPage() {
             <Printer /> 인쇄 / PDF 저장
           </Button>
         </div>
-        <p className="print-only text-xs text-muted-foreground">영어 논설문 피드백 리포트 · 빨간펜 에세이 코치</p>
-        <h1 className="font-essay text-2xl font-bold leading-snug">{report.topic || "(주제 없음)"}</h1>
+        <FeedbackSheetHeader key={report.id + (report.studentName ?? "")} report={report} modelLabel={model?.shortLabel ?? report.modelId} />
         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           <span>{date}</span>
           <Badge variant="outline">{model?.shortLabel ?? report.modelId}</Badge>
@@ -70,12 +72,14 @@ export function ReportPage() {
       <OverallFeedback overall={report.feedback.overall} />
       <div className="print-break-before" />
       <RedPenView essay={report.essay} redPen={report.feedback.redPen} />
-      <CorrectionTable corrections={report.feedback.corrections} unmatchedRedPen={layout.unmatchedItems} />
+      {report.feedback.sentenceReview && <SentenceReviewView no="④" essay={report.essay} review={report.feedback.sentenceReview} />}
+      <CorrectionTable no={hasReview ? "⑤" : "④"} corrections={report.feedback.corrections} unmatchedRedPen={layout.unmatchedItems} />
       <RewriteMission
         key={report.id}
         reportId={report.id}
         mission={report.feedback.rewriteMission}
         summary={summary}
+        no={hasReview ? "⑥" : "⑤"}
         rewriteCostLabel="제출 시 호출 1회 사용"
         onRewrite={() => navigate(`/?rewrite=${report.id}`)}
       />

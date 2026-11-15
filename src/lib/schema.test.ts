@@ -61,7 +61,7 @@ describe("buildResponseSchema", () => {
 
   it("Gemini 형식(대문자 type, propertyOrdering)으로 변환된다", () => {
     expect(schema.type).toBe("OBJECT");
-    expect(schema.propertyOrdering).toEqual(["scores", "overall", "redPen", "corrections", "rewriteMission"]);
+    expect(schema.propertyOrdering).toEqual(["scores", "overall", "redPen", "corrections", "sentenceReview", "rewriteMission"]);
     expect(schema.properties?.scores?.minItems).toBe("6");
     expect(schema.properties?.scores?.items?.properties?.score?.type).toBe("INTEGER");
     expect(schema.properties?.scores?.items?.properties?.key?.enum).toContain("counterargument");
