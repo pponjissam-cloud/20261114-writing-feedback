@@ -20,21 +20,17 @@ export const SAMPLE_FEEDBACK: Feedback = {
       { point: "반대 의견(숙제의 장점)을 소개하고 반박하는 부분이 없어요.", evidence: "In conclusion," },
     ],
   },
-  redPen: [
-    {
-      id: "r1",
-      original: "Many people thinks homework is bad.",
-      revised: "Many people think homework is harmful.",
-      reason: "people은 여러 명을 뜻하니까 think를 써요. 논설문에서는 bad보다 harmful이 더 정확한 단어예요.",
-      suggestedAddition: "For example, students who sleep less than six hours because of homework often feel tired in class.",
-    },
-  ],
-  corrections: [
-    { original: "Many people thinks", corrected: "Many people think", type: "grammar", explanation: "주어가 여러 명(people)이면 동사에 -s를 붙이지 않아요." },
-    { original: "bad", corrected: "harmful", type: "vocabulary", explanation: "논설문에서는 더 구체적인 단어가 설득력이 있어요." },
-    { original: "alot", corrected: "a lot", type: "spelling", explanation: "a lot은 두 단어로 띄어 써요." },
-    { original: "I think so.", corrected: "That is why I believe this.", type: "expression", explanation: "결론에서는 이유와 연결해 다시 주장을 말하면 좋아요." },
-  ],
+  structure: {
+    parts: [
+      { role: "claim", label: "서론·주장", fromNo: 1, toNo: 2, comment: "숙제에 반대한다는 입장이 처음부터 분명해요." },
+      { role: "reason", label: "근거 1", fromNo: 3, toNo: 3, comment: "피곤하다는 이유만 있고 '왜' 피곤한지 설명이 짧아요." },
+    ],
+    missing: [
+      { role: "example", afterNo: 3, suggestion: "근거 1 뒤에 '나는 숙제 때문에 6시간밖에 못 잔다'처럼 실제 경험이나 숫자를 넣어 보세요." },
+      { role: "counterargument", afterNo: 3, suggestion: "결론 전에 '숙제가 복습에 도움이 된다'는 반대 의견을 소개하고 However로 반박해 보세요." },
+    ],
+    flowComment: "주장 → 근거 → 결론의 기본 틀은 있지만, 근거를 받쳐 줄 예시와 반대 의견 부분이 비어 있어요.",
+  },
   sentenceReview: {
     items: [
       { no: 1, action: "revise", minimal: "Many people think homework is bad.", recommended: "Many people believe that homework does more harm than good.", note: "people은 여러 명이라 think를 써요." },

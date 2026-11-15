@@ -3,7 +3,7 @@ import { DEFAULT_MODEL_ID, MAX_OUTPUT_TOKENS, REQUEST_TIMEOUT_MS, type ModelId }
 import { RUBRIC } from "@/config/rubric";
 import { hashKey, redactSecrets } from "@/lib/apiKey";
 import { quota as defaultQuota, QuotaError, type QuotaGuard } from "@/lib/quota";
-import { buildResponseSchema, buildTranscriptionSchema, parseFeedback, parseTranscription, type Feedback, type Transcription } from "@/lib/schema";
+import { buildResponseSchema, buildTranscriptionSchema, parseFeedback, parseTranscription, type EssayStructure, type Feedback, type Transcription } from "@/lib/schema";
 import { buildSystemInstruction, buildUserPrompt, TRANSCRIPTION_INSTRUCTION, type PreviousAttempt } from "@/lib/llm/prompts";
 import { SAMPLE_FEEDBACK } from "@/lib/llm/sampleFeedback";
 import { splitSentences } from "@/lib/sentences";
@@ -260,17 +260,27 @@ export function createGeminiService(deps: GeminiDeps) {
 /** VITE_MOCK 모드: 고정 샘플 + 학생 글 첫 문장을 첨삭 예시로 넣어 하이라이트를 확인할 수 있게 한다 */
 export function mockFeedbackFor(essay: string): Feedback {
   const fb = structuredClone(SAMPLE_FEEDBACK);
-  const firstSentence = essay.match(/[^.!?\n]+[.!?]/)?.[0]?.trim();
-  if (firstSentence && firstSentence !== fb.redPen[0]?.original) {
-    fb.redPen.unshift({
-      id: "m1",
-      original: firstSentence,
-      revised: `In my opinion, ${firstSentence.charAt(0).toLowerCase()}${firstSentence.slice(1)}`,
-      reason: "(모의 응답) 첫 문장에 In my opinion을 붙이면 내 주장이라는 것이 더 분명해져요.",
-    });
+  const all = splitSentences(essay);
+  const n = all.length;
+  // 구조 분석 데모: 첫 문장 = 주장, 중간 = 근거, 마지막 = 결론, 반대 의견은 빠진 것으로
+  if (n >= 3) {
+    const mid = Math.max(2, Math.floor(n / 2));
+    fb.structure = {
+      parts: ([
+        { role: "claim", label: "서론·주장", fromNo: 1, toNo: 1, comment: "(모의 응답) 주장이 처음에 분명하게 나와요." },
+        { role: "reason", label: "근거 1", fromNo: 2, toNo: mid, comment: "(모의 응답) 이유는 있지만 '왜'에 대한 설명이 짧아요." },
+        { role: "reason", label: "근거 2", fromNo: mid + 1, toNo: n - 1, comment: "(모의 응답) 근거 1과 내용이 조금 겹쳐요." },
+        { role: "conclusion", label: "결론", fromNo: n, toNo: n, comment: "(모의 응답) 주장을 다시 정리했어요." },
+      ] satisfies EssayStructure["parts"]).filter((p) => p.fromNo <= p.toNo),
+      missing: [
+        { role: "example", afterNo: mid, suggestion: "(모의 응답) 근거 1 뒤에 실제 경험이나 숫자가 들어간 예시를 넣어 보세요." },
+        { role: "counterargument", afterNo: n - 1, suggestion: "(모의 응답) 결론 앞에 반대 의견을 소개하고 However로 반박해 보세요." },
+      ],
+      flowComment: "(모의 응답) 주장 → 근거 → 결론의 틀은 있지만 예시와 반대 의견이 비어 있어요.",
+    };
   }
   // 문장별 첨삭 데모: 첫 문장은 고치고, 셋째 문장은 삭제, 둘째 문장 뒤에 예시 삽입
-  const sentences = splitSentences(essay);
+  const sentences = all;
   fb.sentenceReview = {
     items: sentences.map((s) => {
       if (s.no === 1) {

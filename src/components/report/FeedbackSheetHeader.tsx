@@ -22,13 +22,13 @@ export function FeedbackSheetHeader({ report, modelLabel }: { report: StoredRepo
   };
 
   return (
-    <div className="print-avoid-break overflow-hidden rounded-lg border-2 border-foreground/80">
-      <div className="flex items-baseline justify-between gap-2 border-b-2 border-foreground/80 bg-muted px-4 py-2">
-        <h1 className="text-lg font-bold tracking-wide">Feedback Sheet</h1>
+    <div className="overflow-hidden rounded-lg border-2 border-foreground/80">
+      <div className="flex items-baseline justify-between gap-2 border-b-2 border-foreground/80 bg-muted px-4 py-1.5">
+        <h1 className="text-base font-bold tracking-wide">Feedback Sheet</h1>
         <span className="text-xs text-muted-foreground">영어 논설문 피드백</span>
       </div>
       <dl className="grid grid-cols-[4.5rem_1fr] text-sm sm:grid-cols-[4.5rem_1fr_4.5rem_1fr]">
-        <dt className="border-b border-r bg-muted/60 px-3 py-2 font-medium">이름</dt>
+        <dt className="border-b border-r bg-muted/60 px-3 py-1.5 font-medium">이름</dt>
         <dd className="flex items-center gap-2 border-b px-3 py-1.5 sm:border-r" data-testid="sheet-name">
           {editing ? (
             <>
@@ -53,10 +53,10 @@ export function FeedbackSheetHeader({ report, modelLabel }: { report: StoredRepo
             </>
           )}
         </dd>
-        <dt className="border-b border-r bg-muted/60 px-3 py-2 font-medium">날짜</dt>
-        <dd className="border-b px-3 py-2 tabular-nums" data-testid="sheet-date">{formatSheetDate(report.createdAt)}</dd>
-        <dt className="border-r bg-muted/60 px-3 py-2 font-medium">주제</dt>
-        <dd className="px-3 py-2 font-essay sm:col-span-3">{report.topic || "(주제 없음)"}</dd>
+        <dt className="border-b border-r bg-muted/60 px-3 py-1.5 font-medium">날짜</dt>
+        <dd className="border-b px-3 py-1.5 tabular-nums" data-testid="sheet-date">{formatSheetDate(report.createdAt)}</dd>
+        <dt className="border-r bg-muted/60 px-3 py-1.5 font-medium">주제</dt>
+        <dd className="px-3 py-1.5 font-essay sm:col-span-3">{report.topic || "(주제 없음)"}</dd>
       </dl>
       <p className="sr-only">AI 모델: {modelLabel}</p>
     </div>

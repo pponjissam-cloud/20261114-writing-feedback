@@ -11,10 +11,13 @@ describe("parseFeedback", () => {
     expect(parseFeedback("```json\n" + JSON.stringify(SAMPLE_FEEDBACK) + "\n```").ok).toBe(true);
   });
 
-  it("suggestedAddition 은 생략 가능하다", () => {
+  it("이전 형식 필드(redPen·corrections)가 섞여 있어도 무시하고 통과한다", () => {
     const fb = clone();
-    delete fb.redPen[0].suggestedAddition;
-    expect(parseFeedback(fb).ok).toBe(true);
+    fb.redPen = [{ id: "r1" }];
+    fb.corrections = [];
+    const r = parseFeedback(fb);
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.data).not.toHaveProperty("redPen");
   });
 
   it("JSON 이 아니면 실패한다", () => {
@@ -34,12 +37,14 @@ describe("parseFeedback", () => {
     expect(parseFeedback(fb).ok).toBe(false);
   });
 
-  it("음수/소수 점수, 잘못된 key, 잘못된 정정 유형을 거부한다", () => {
+  it("음수/소수 점수, 잘못된 key, 잘못된 구조 역할·문장 동작을 거부한다", () => {
     const neg = clone(); neg.scores[0].score = -1;
     const frac = clone(); frac.scores[0].score = 3.5;
     const badKey = clone(); badKey.scores[0].key = "creativity";
-    const badType = clone(); badType.corrections[0].type = "style";
-    for (const fb of [neg, frac, badKey, badType]) expect(parseFeedback(fb).ok).toBe(false);
+    const badRole = clone(); badRole.structure.parts[0].role = "hook";
+    const badAction = clone(); badAction.sentenceReview.items[0].action = "rewrite";
+    const noStructure = clone(); delete noStructure.structure;
+    for (const fb of [neg, frac, badKey, badRole, badAction, noStructure]) expect(parseFeedback(fb).ok).toBe(false);
   });
 
   it("strengths 개수(2~4)와 tasks 개수(2~3), selfCheck 개수(2~4)를 검사한다", () => {
@@ -61,15 +66,16 @@ describe("buildResponseSchema", () => {
 
   it("Gemini 형식(대문자 type, propertyOrdering)으로 변환된다", () => {
     expect(schema.type).toBe("OBJECT");
-    expect(schema.propertyOrdering).toEqual(["scores", "overall", "redPen", "corrections", "sentenceReview", "rewriteMission"]);
+    expect(schema.propertyOrdering).toEqual(["scores", "overall", "structure", "sentenceReview", "rewriteMission"]);
     expect(schema.properties?.scores?.minItems).toBe("6");
     expect(schema.properties?.scores?.items?.properties?.score?.type).toBe("INTEGER");
     expect(schema.properties?.scores?.items?.properties?.key?.enum).toContain("counterargument");
   });
 
-  it("optional 필드는 required 에서 빠진다", () => {
-    const red = schema.properties?.redPen?.items;
-    expect(red?.required).toEqual(["id", "original", "revised", "reason"]);
+  it("구조 분석 스키마가 포함된다", () => {
+    const parts = schema.properties?.structure?.properties?.parts?.items;
+    expect(parts?.required).toEqual(["role", "label", "fromNo", "toNo", "comment"]);
+    expect(parts?.properties?.role?.enum).toContain("counterargument");
   });
 
   it("Gemini 가 지원하지 않는 키를 포함하지 않는다", () => {

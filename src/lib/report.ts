@@ -1,16 +1,9 @@
 import type { ModelId } from "@/config/models";
 import type { RubricKey } from "@/config/rubric";
-import type { CorrectionType, Feedback } from "@/lib/schema";
+import type { Feedback } from "@/lib/schema";
 import { computeScores, snapshotRubric, type ScoreSummary } from "@/lib/scoring";
 import type { StoredReport } from "@/lib/storage";
 import type { PreviousAttempt } from "@/lib/llm/prompts";
-
-export const CORRECTION_TYPE_LABEL: Record<CorrectionType, string> = {
-  vocabulary: "어휘",
-  grammar: "문법",
-  expression: "표현",
-  spelling: "철자",
-};
 
 export function newId(): string {
   return crypto.randomUUID?.() ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;

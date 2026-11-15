@@ -159,7 +159,8 @@ describe("generateFeedback", () => {
   it("VITE_MOCK 모드에서는 SDK 를 호출하지 않고 사용량도 차감하지 않는다", async () => {
     const r = await service(true).generateFeedback(req);
     expect(r.mock).toBe(true);
-    expect(r.feedback.redPen[0]!.original).toBe("Many people thinks homework is bad.");
+    expect(r.feedback.structure.parts[0]!.fromNo).toBe(1);
+    expect(r.feedback.sentenceReview.items).toHaveLength(20);
     expect(sdk.calls).toHaveLength(0);
     expect(sdk.constructed).toHaveLength(0);
     expect(guard.status(keyHash, LITE).used).toBe(0);
@@ -220,9 +221,10 @@ describe("소스 정적 검사", () => {
 });
 
 describe("mockFeedbackFor", () => {
-  it("학생 글 첫 문장을 첨삭 예시로 넣는다", () => {
-    const fb = mockFeedbackFor("Schools should start later. Students need sleep.");
-    expect(fb.redPen[0]!.original).toBe("Schools should start later.");
+  it("학생 글 문장 수에 맞춰 구조·문장별 첨삭을 만든다", () => {
+    const fb = mockFeedbackFor("Schools should start later. Students need sleep. Sleep helps memory. So start later.");
+    expect(fb.structure.parts.map((p) => p.role)).toEqual(["claim", "reason", "reason", "conclusion"]);
+    expect(fb.sentenceReview.items).toHaveLength(4);
   });
 });
 

@@ -4,6 +4,10 @@ import { RUBRIC_KEYS } from "@/config/rubric";
 
 export const RubricKeySchema = z.enum(RUBRIC_KEYS);
 
+export const STRUCTURE_ROLES = ["introduction", "claim", "reason", "example", "counterargument", "rebuttal", "conclusion", "other"] as const;
+export const StructureRoleSchema = z.enum(STRUCTURE_ROLES);
+export type StructureRole = z.infer<typeof StructureRoleSchema>;
+
 const Evidence = z.object({
   point: z.string().describe("Korean, friendly polite tone (존댓말)"),
   evidence: z.string().describe("Short quote copied exactly from the student's essay"),
@@ -23,23 +27,25 @@ export const FeedbackSchema = z.object({
     strengths: z.array(Evidence).min(2).max(4),
     weaknesses: z.array(Evidence).min(2).max(4),
   }),
-  redPen: z.array(
-    z.object({
-      id: z.string(),
-      original: z.string().describe("Exact substring copied character-for-character from the student's essay"),
-      revised: z.string().describe("Improved English version"),
-      reason: z.string().describe("Easy Korean explanation"),
-      suggestedAddition: z.string().optional().describe("Optional English example sentence the student could add"),
-    }),
-  ),
-  corrections: z.array(
-    z.object({
-      original: z.string(),
-      corrected: z.string(),
-      type: z.enum(["vocabulary", "grammar", "expression", "spelling"]),
-      explanation: z.string().describe("Easy Korean explanation"),
-    }),
-  ),
+  structure: z.object({
+    parts: z.array(
+      z.object({
+        role: StructureRoleSchema,
+        label: z.string().describe('Short Korean label, e.g. "서론·주장", "근거 1", "예시", "결론"'),
+        fromNo: z.number().int().min(1).describe("First sentence number of this part"),
+        toNo: z.number().int().min(1).describe("Last sentence number of this part"),
+        comment: z.string().describe("One short Korean red-pen comment on how well this part does its job"),
+      }),
+    ),
+    missing: z.array(
+      z.object({
+        role: StructureRoleSchema,
+        afterNo: z.number().int().min(0).describe("Where it should go: after this sentence number (0 = before sentence 1)"),
+        suggestion: z.string().describe("Korean: what to add there and how, specific to this essay"),
+      }),
+    ),
+    flowComment: z.string().describe("1-2 Korean sentences on the overall structure and logical flow"),
+  }),
   sentenceReview: z.object({
     items: z.array(
       z.object({
@@ -74,12 +80,11 @@ export const FeedbackSchema = z.object({
 });
 
 export type Feedback = z.infer<typeof FeedbackSchema>;
-export type CorrectionType = Feedback["corrections"][number]["type"];
-export type RedPenItem = Feedback["redPen"][number];
 export type SentenceReview = Feedback["sentenceReview"];
+export type EssayStructure = Feedback["structure"];
 
-/** 이 기능 이전에 저장된 리포트에는 sentenceReview 가 없다 */
-export const StoredFeedbackSchema = FeedbackSchema.partial({ sentenceReview: true });
+/** 이전 형식으로 저장된 리포트에는 structure / sentenceReview 가 없다 (예전 redPen·corrections 는 무시) */
+export const StoredFeedbackSchema = FeedbackSchema.partial({ structure: true, sentenceReview: true });
 export type StoredFeedback = z.infer<typeof StoredFeedbackSchema>;
 
 /** JSON 스키마로 표현하기 어려운 제약(항목 중복 금지)까지 포함한 검증용 스키마 */
@@ -87,10 +92,6 @@ export const StrictFeedbackSchema = FeedbackSchema.superRefine((fb, ctx) => {
   const keys = new Set(fb.scores.map((s) => s.key));
   if (keys.size !== RUBRIC_KEYS.length) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["scores"], message: "scores must contain each rubric key exactly once" });
-  }
-  const ids = new Set(fb.redPen.map((r) => r.id));
-  if (ids.size !== fb.redPen.length) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["redPen"], message: "redPen ids must be unique" });
   }
 });
 

@@ -14,42 +14,39 @@ function Diff({ value, className }: { value: number; className?: string }) {
   );
 }
 
+/** ① 평가 결과 — 첫 장에 ①~③이 모두 들어가도록 높이를 최소화한 형태 */
 export function ScoreCard({ summary, previous }: { summary: ScoreSummary; previous?: ScoreSummary | null }) {
   return (
-    <section aria-labelledby="sec-score" className="print-avoid-break">
+    <section aria-labelledby="sec-score">
       <SectionTitle no="①" title="평가 결과" sub="100점 만점" />
       <Card>
-        <CardContent className="grid gap-6 p-5 sm:grid-cols-[10rem_1fr]">
-          <div className="flex flex-col items-center justify-center rounded-lg border-2 border-redpen/70 p-4 text-redpen" id="sec-score">
-            <span className="text-sm font-medium text-foreground">총점</span>
-            <span className="font-essay text-6xl font-bold leading-none tabular-nums" data-testid="total-score">
+        <CardContent className="flex gap-3 p-3">
+          <div className="flex w-20 shrink-0 flex-col items-center justify-center rounded-md border-2 border-redpen/70 py-1 text-redpen" id="sec-score">
+            <span className="text-[0.65rem] font-medium text-foreground">총점</span>
+            <span className="font-essay text-4xl font-bold leading-none tabular-nums" data-testid="total-score">
               {summary.total}
             </span>
-            <span className="text-sm text-muted-foreground">/ {summary.maxTotal}</span>
-            {previous && (
-              <span className="mt-2 text-xs text-foreground">
-                이전 {previous.total}점 → <Diff value={summary.total - previous.total} className="font-semibold" />
-              </span>
-            )}
+            <span className="text-[0.65rem] text-muted-foreground">/ {summary.maxTotal}</span>
+            {previous && <Diff value={summary.total - previous.total} className="mt-0.5 text-[0.7rem] font-semibold" />}
           </div>
-          <ul className="flex flex-col gap-3">
+          <ul className="grid min-w-0 flex-1 grid-cols-1 gap-x-4 gap-y-1.5 sm:grid-cols-2">
             {summary.items.map((item) => {
               const prev = previous?.items.find((p) => p.key === item.key);
               const pct = Math.round(item.ratio * 100);
               return (
-                <li key={item.key}>
-                  <div className="flex items-baseline justify-between gap-2 text-sm">
-                    <span className="font-medium">{item.label}</span>
-                    <span className="tabular-nums">
+                <li key={item.key} className="min-w-0">
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="w-[4.6rem] shrink-0 whitespace-nowrap font-medium">{item.label}</span>
+                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted" role="meter" aria-valuemin={0} aria-valuemax={item.max} aria-valuenow={item.score} aria-label={`${item.label} 점수`}>
+                      <div className={cn("h-full rounded-full", pct >= 80 ? "bg-emerald-500" : pct >= 50 ? "bg-amber-500" : "bg-redpen")} style={{ width: `${pct}%` }} />
+                    </div>
+                    <span className="w-11 shrink-0 text-right tabular-nums">
                       <strong>{item.score}</strong>
-                      <span className="text-muted-foreground"> / {item.max}</span>
-                      {prev && <Diff value={item.score - prev.score} className="ml-2 text-xs" />}
+                      <span className="text-muted-foreground">/{item.max}</span>
                     </span>
+                    {prev && <Diff value={item.score - prev.score} className="w-7 shrink-0 text-[0.65rem]" />}
                   </div>
-                  <div className="mt-1 h-2 overflow-hidden rounded-full bg-muted" role="meter" aria-valuemin={0} aria-valuemax={item.max} aria-valuenow={item.score} aria-label={`${item.label} 점수`}>
-                    <div className={cn("h-full rounded-full", pct >= 80 ? "bg-emerald-500" : pct >= 50 ? "bg-amber-500" : "bg-redpen")} style={{ width: `${pct}%` }} />
-                  </div>
-                  <p className="mt-1 text-xs text-muted-foreground">{item.rationale}</p>
+                  <p className="text-[0.7rem] leading-snug text-muted-foreground">{item.rationale}</p>
                 </li>
               );
             })}

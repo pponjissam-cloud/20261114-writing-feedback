@@ -7,8 +7,7 @@ import { summaryOf } from "@/lib/report";
 import { useReports } from "@/hooks/useReports";
 import { ScoreCard } from "@/components/report/ScoreCard";
 import { OverallFeedback } from "@/components/report/OverallFeedback";
-import { RedPenView, useRedPenLayout } from "@/components/report/RedPenView";
-import { CorrectionTable } from "@/components/report/CorrectionTable";
+import { StructureView } from "@/components/report/StructureView";
 import { RewriteMission } from "@/components/report/RewriteMission";
 import { SentenceReviewView } from "@/components/report/SentenceReview";
 import { FeedbackSheetHeader } from "@/components/report/FeedbackSheetHeader";
@@ -23,7 +22,6 @@ export function ReportPage() {
   const parent = report?.parentId ? reportStore.get(report.parentId) : null;
   const summary = useMemo(() => (report ? summaryOf(report) : null), [report]);
   const prevSummary = useMemo(() => (parent ? summaryOf(parent) : null), [parent]);
-  const layout = useRedPenLayout(report?.essay ?? "", report?.feedback.redPen ?? []);
 
   if (!report || !summary) {
     return (
@@ -37,52 +35,58 @@ export function ReportPage() {
   }
 
   const model = getModel(report.modelId);
-  const hasReview = !!report.feedback.sentenceReview;
   const date = new Date(report.createdAt).toLocaleString("ko-KR", { dateStyle: "medium", timeStyle: "short" });
 
   return (
-    <article className="mx-auto flex max-w-4xl flex-col gap-8">
-      <header className="flex flex-col gap-3">
-        <div className="no-print flex flex-wrap items-center justify-between gap-2">
-          <Button variant="ghost" size="sm" asChild>
-            <Link to="/history">
-              <ArrowLeft /> 내 기록
-            </Link>
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => window.print()}>
-            <Printer /> 인쇄 / PDF 저장
-          </Button>
-        </div>
+    <article className="mx-auto flex max-w-4xl flex-col gap-6">
+      <div className="no-print flex flex-wrap items-center justify-between gap-2">
+        <Button variant="ghost" size="sm" asChild>
+          <Link to="/history">
+            <ArrowLeft /> 내 기록
+          </Link>
+        </Button>
+        <Button variant="outline" size="sm" onClick={() => window.print()}>
+          <Printer /> 인쇄 / PDF 저장 (A4 2장)
+        </Button>
+      </div>
+
+      {/* 1장: Feedback Sheet + ① 평가 결과 + ② 종합 피드백 + ③ 빨간펜 구조 분석 */}
+      <div className="print-page flex flex-col gap-4" data-testid="print-page-1">
         <FeedbackSheetHeader key={report.id + (report.studentName ?? "")} report={report} modelLabel={model?.shortLabel ?? report.modelId} />
-        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+        <div className="no-print flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           <span>{date}</span>
           <Badge variant="outline">{model?.shortLabel ?? report.modelId}</Badge>
           {report.version > 1 && <Badge variant="secondary">Rewrite {report.version}번째 글</Badge>}
           {report.inputMethod === "photo" && <Badge variant="secondary">손글씨 사진 제출</Badge>}
           {report.mock && <Badge variant="destructive">모의 응답</Badge>}
           {parent && (
-            <Link className="no-print underline" to={`/report/${parent.id}`}>
+            <Link className="underline" to={`/report/${parent.id}`}>
               이전 리포트 보기
             </Link>
           )}
         </div>
-      </header>
+        <ScoreCard summary={summary} previous={prevSummary} />
+        <OverallFeedback overall={report.feedback.overall} />
+        <StructureView essay={report.essay} structure={report.feedback.structure} />
+      </div>
 
-      <ScoreCard summary={summary} previous={prevSummary} />
-      <OverallFeedback overall={report.feedback.overall} />
-      <div className="print-break-before" />
-      <RedPenView essay={report.essay} redPen={report.feedback.redPen} />
-      {report.feedback.sentenceReview && <SentenceReviewView no="④" essay={report.essay} review={report.feedback.sentenceReview} />}
-      <CorrectionTable no={hasReview ? "⑤" : "④"} corrections={report.feedback.corrections} unmatchedRedPen={layout.unmatchedItems} />
-      <RewriteMission
-        key={report.id}
-        reportId={report.id}
-        mission={report.feedback.rewriteMission}
-        summary={summary}
-        no={hasReview ? "⑥" : "⑤"}
-        rewriteCostLabel="제출 시 호출 1회 사용"
-        onRewrite={() => navigate(`/?rewrite=${report.id}`)}
-      />
+      {/* 2장: ④ 문장별 첨삭 + ⑤ Rewrite 미션 */}
+      <div className="print-page flex flex-col gap-4" data-testid="print-page-2">
+        {report.feedback.sentenceReview ? (
+          <SentenceReviewView no="④" essay={report.essay} review={report.feedback.sentenceReview} />
+        ) : (
+          <p className="text-sm text-muted-foreground">④ 이 리포트는 이전 형식이라 문장별 첨삭이 없어요.</p>
+        )}
+        <RewriteMission
+          key={report.id}
+          no="⑤"
+          reportId={report.id}
+          mission={report.feedback.rewriteMission}
+          summary={summary}
+          rewriteCostLabel="제출 시 호출 1회 사용"
+          onRewrite={() => navigate(`/?rewrite=${report.id}`)}
+        />
+      </div>
     </article>
   );
 }

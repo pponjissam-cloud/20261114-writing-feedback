@@ -2,6 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App";
 import { assertRubricTotal } from "@/lib/scoring";
+import { installPrintFit } from "@/lib/printFit";
 import "./index.css";
 
 const root = createRoot(document.getElementById("root")!);
@@ -9,6 +10,7 @@ const root = createRoot(document.getElementById("root")!);
 try {
   // 배점 설정 실수(합계 ≠ 100)는 잘못된 점수를 보여 주기 전에 바로 드러나게 한다
   assertRubricTotal();
+  installPrintFit();
   root.render(
     <StrictMode>
       <App />

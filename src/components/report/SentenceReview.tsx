@@ -32,7 +32,7 @@ function Line({ label, children, className = "" }: { label: string; children: Re
   return (
     <div className="grid grid-cols-[3.25rem_1fr] items-baseline gap-2">
       <span className="font-sans text-[0.7rem] font-medium text-muted-foreground">{label}</span>
-      <p className={cn("font-essay text-[1.02rem] leading-relaxed", className)}>{children}</p>
+      <p className={cn("font-essay text-[0.98rem] leading-snug printing:text-[0.9rem]", className)}>{children}</p>
     </div>
   );
 }
@@ -49,7 +49,7 @@ function Note({ text, blue }: { text: string; blue?: boolean }) {
 function SentenceRow({ row }: { row: Extract<ReviewRow, { kind: "sentence" }> }) {
   if (row.action === "delete") {
     return (
-      <li className="print-avoid-break flex gap-3 py-3" data-testid={`sentence-${row.no}`}>
+      <li className="flex gap-3 py-2 printing:gap-2 printing:py-1" data-testid={`sentence-${row.no}`}>
         <span className={`w-7 shrink-0 text-right font-bold tabular-nums ${BLUE}`}>{row.no}</span>
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <Line label="학생" className={`${BLUE} line-through`}>{row.original}</Line>
@@ -63,16 +63,17 @@ function SentenceRow({ row }: { row: Extract<ReviewRow, { kind: "sentence" }> })
   }
   const recommendedDiffers = row.recommended.trim() !== row.minimal.trim();
   return (
-    <li className="print-avoid-break flex gap-3 py-3" data-testid={`sentence-${row.no}`}>
+    <li className="flex gap-3 py-2 printing:gap-2 printing:py-1" data-testid={`sentence-${row.no}`}>
       <span className="w-7 shrink-0 text-right font-bold tabular-nums">{row.no}</span>
       <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <Line label="학생" className={BLACK}>{row.original}</Line>
-        {row.action === "revise" ? (
+        <Line label="학생" className={BLACK}>
+          {row.original}
+          {row.action === "keep" && <span className="ml-2 whitespace-nowrap font-sans text-[0.7rem] text-emerald-600 dark:text-emerald-400">✓ 고칠 곳 없음</span>}
+        </Line>
+        {row.action === "revise" && (
           <Line label="최소 첨삭">
             <MinimalDiff parts={row.diff} />
           </Line>
-        ) : (
-          <Line label="최소 첨삭" className="font-sans text-xs text-emerald-600 dark:text-emerald-400">✓ 고칠 곳이 없어요</Line>
         )}
         {(row.action === "revise" || recommendedDiffers) && (
           <Line label="추천" className={`${BLACK} font-bold`}>{row.recommended}</Line>
@@ -85,7 +86,7 @@ function SentenceRow({ row }: { row: Extract<ReviewRow, { kind: "sentence" }> })
 
 function InsertRow({ row }: { row: Extract<ReviewRow, { kind: "insert" }> }) {
   return (
-    <li className="print-avoid-break flex gap-3 py-3" data-testid="insert-row">
+    <li className="flex gap-3 py-2 printing:gap-2 printing:py-1" data-testid="insert-row">
       <span className={`flex w-7 shrink-0 justify-end ${BLUE}`} aria-label="삽입">
         <Plus className="size-4" />
       </span>
@@ -110,8 +111,8 @@ export function SentenceReviewView({ essay, review, no }: { essay: string; revie
     <section>
       <SectionTitle no={no} title="문장별 첨삭" sub={`${total}문장 · 고칠 문장 ${revised} · 뺄 문장 ${deleted} · 넣을 문장 ${inserted}`} />
       <Card>
-        <CardContent className="p-5">
-          <ul className="mb-3 flex flex-wrap gap-x-4 gap-y-1 rounded-md bg-muted px-3 py-2 text-xs" aria-label="표시 방법">
+        <CardContent className="p-4 printing:p-3">
+          <ul className="mb-2 flex flex-wrap gap-x-4 gap-y-0.5 rounded-md bg-muted px-3 py-1.5 text-[0.7rem]" aria-label="표시 방법">
             <li><span className={BLACK}>학생 문장</span> = 내가 쓴 그대로</li>
             <li>
               최소 첨삭 = <span className={GREY}>그대로 둔 부분</span> + <span className={`${BLACK} font-semibold underline underline-offset-4`}>고친 부분</span> <del className={BLACK}>지운 부분</del>
@@ -126,7 +127,7 @@ export function SentenceReviewView({ essay, review, no }: { essay: string; revie
               return (
                 <Fragment key={row.kind === "sentence" ? `s${row.no}` : `i${row.afterNo}-${i}`}>
                   {breakBefore && (
-                    <li aria-hidden className="py-1 text-center text-[0.7rem] text-muted-foreground">
+                    <li aria-hidden className="py-0.5 text-center text-[0.65rem] text-muted-foreground">
                       ── 문단 {row.kind === "sentence" ? row.paragraph + 1 : ""} ──
                     </li>
                   )}

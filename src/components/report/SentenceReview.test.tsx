@@ -27,7 +27,7 @@ describe("SentenceReviewView", () => {
     expect(within(s1).getByText("thinks", { selector: "del" })).toBeInTheDocument();
     expect(within(s1).getByText("Many people believe homework is harmful.").className).toMatch(/font-bold/);
 
-    expect(within(screen.getByTestId("sentence-2")).getByText(/고칠 곳이 없어요/)).toBeInTheDocument();
+    expect(within(screen.getByTestId("sentence-2")).getByText(/고칠 곳 없음/)).toBeInTheDocument();
 
     const del = within(screen.getByTestId("sentence-3")).getByText("It is boring.");
     expect(del.className).toMatch(/text-blue-600/);
