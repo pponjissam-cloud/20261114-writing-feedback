@@ -24,7 +24,8 @@ describe("SentenceReviewView", () => {
     expect(within(s1).getByText("Many people thinks homework is bad.")).toBeInTheDocument();
     const added = within(s1).getByText("think");
     expect(added.className).toMatch(/text-redpen/);
-    expect(within(s1).getByText("thinks", { selector: "del" }).className).toMatch(/text-redpen/);
+    expect(within(s1).getByText("thinks", { selector: "del" }).className).toMatch(/text-neutral-400/);
+    expect(within(s1).getByText("thinks", { selector: "del" }).className).not.toMatch(/text-redpen/);
     expect(within(s1).getByText("thinks", { selector: "del" })).toBeInTheDocument();
     expect(within(s1).getByText("Many people believe homework is harmful.").className).toMatch(/font-bold/);
 
