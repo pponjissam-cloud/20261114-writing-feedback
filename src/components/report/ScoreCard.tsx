@@ -29,24 +29,22 @@ export function ScoreCard({ summary, previous }: { summary: ScoreSummary; previo
             <span className="text-[0.65rem] text-muted-foreground">/ {summary.maxTotal}</span>
             {previous && <Diff value={summary.total - previous.total} className="mt-0.5 text-[0.7rem] font-semibold" />}
           </div>
-          <ul className="grid min-w-0 flex-1 grid-cols-1 gap-x-4 gap-y-1.5 sm:grid-cols-2">
+          <ul className="flex min-w-0 flex-1 flex-col justify-center gap-1">
             {summary.items.map((item) => {
               const prev = previous?.items.find((p) => p.key === item.key);
               const pct = Math.round(item.ratio * 100);
               return (
-                <li key={item.key} className="min-w-0">
-                  <div className="flex items-center gap-2 text-xs">
-                    <span className="w-[4.6rem] shrink-0 whitespace-nowrap font-medium">{item.label}</span>
-                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted" role="meter" aria-valuemin={0} aria-valuemax={item.max} aria-valuenow={item.score} aria-label={`${item.label} 점수`}>
-                      <div className={cn("h-full rounded-full", pct >= 80 ? "bg-emerald-500" : pct >= 50 ? "bg-amber-500" : "bg-redpen")} style={{ width: `${pct}%` }} />
-                    </div>
-                    <span className="w-11 shrink-0 text-right tabular-nums">
-                      <strong>{item.score}</strong>
-                      <span className="text-muted-foreground">/{item.max}</span>
-                    </span>
-                    {prev && <Diff value={item.score - prev.score} className="w-7 shrink-0 text-[0.65rem]" />}
+                <li key={item.key} className="flex min-w-0 flex-wrap items-center gap-x-2 text-xs sm:flex-nowrap">
+                  <span className="w-[4.6rem] shrink-0 whitespace-nowrap font-medium">{item.label}</span>
+                  <div className="h-1.5 w-24 shrink-0 overflow-hidden rounded-full bg-muted" role="meter" aria-valuemin={0} aria-valuemax={item.max} aria-valuenow={item.score} aria-label={`${item.label} 점수`}>
+                    <div className={cn("h-full rounded-full", pct >= 80 ? "bg-emerald-500" : pct >= 50 ? "bg-amber-500" : "bg-redpen")} style={{ width: `${pct}%` }} />
                   </div>
-                  <p className="text-[0.7rem] leading-snug text-muted-foreground">{item.rationale}</p>
+                  <span className="w-11 shrink-0 text-right tabular-nums">
+                    <strong>{item.score}</strong>
+                    <span className="text-muted-foreground">/{item.max}</span>
+                  </span>
+                  {previous && <span className="w-7 shrink-0">{prev && <Diff value={item.score - prev.score} className="text-[0.65rem]" />}</span>}
+                  <p className="min-w-0 basis-full text-[0.7rem] leading-snug text-muted-foreground sm:basis-auto sm:flex-1">{item.rationale}</p>
                 </li>
               );
             })}

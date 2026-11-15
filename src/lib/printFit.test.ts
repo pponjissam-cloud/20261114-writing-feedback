@@ -16,6 +16,10 @@ describe("print fit", () => {
     const z = fitPrintPages();
     expect(z[0]).toBe(1);
     expect(z[1]).toBeLessThan(1);
-    expect(document.getElementById("b")!.style.zoom).toBe(String(z[1]));
+    const b = document.getElementById("b")!;
+    expect(b.style.zoom).toBe(String(z[1]));
+    // 줄어든 장도 줄인 뒤 폭이 인쇄 폭(190mm)이 되도록 배치 폭을 넓힌다
+    expect(parseFloat(b.style.width) * z[1]!).toBeCloseTo(190, 0);
+    expect(document.getElementById("a")!.style.width).toBe("");
   });
 });
